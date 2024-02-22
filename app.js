@@ -3,6 +3,8 @@ const express = require("express");
 const { connectMongoDB } = require("./connection");
 require("dotenv").config();
 const authentication = require('./routes/authentication/user')
+const blog = require('./routes/home/blog');
+const { validateUser } = require("./middleware/user");
 
 //initialization
 const app = express();
@@ -18,6 +20,7 @@ connectMongoDB(`${process.env.dbURL}${DBName}`)
 // middlewares
 app.use(express.urlencoded({extended: false}))
 app.use('/authentication', authentication);
+app.use('/blogs', validateUser, blog)
 
 // inital get
 app.get("/", (request, response) => {

@@ -26,7 +26,7 @@ comments : data, blog
 /user/blogs -> get -> get all blogs of user                                                                 ✔
 /user/blogs/:blogId -> put -> update the blog
 /user/blogs/:blogId -> delete -> delete the blog
-/user/blogs/:blogId -> get -> get all data related to specific blog
+/user/blogs/:blogId -> get -> get all data related to specific blog                                         ✔
 /user/blogs/publish -> post -> post a blog of user
 
 /blogs -> get -> get all the blogs in database                                                              ✔

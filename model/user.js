@@ -7,6 +7,11 @@ const rounds = 10;
 
 // Schema for Users
 const userSchema = mongoose.Schema({
+  authID : {
+    type : String,
+    required : true,
+    unique : true
+  },
   name: {
     type: String,
     required: true,
@@ -20,14 +25,14 @@ const userSchema = mongoose.Schema({
     unique: true,
   },
 
-  password: {
+  /* password: {
     required: true,
     type: String,
   },
 
   salt: {
     type: String,
-  },
+  }, */
 
   blogs: [
     {
@@ -67,24 +72,6 @@ const userSchema = mongoose.Schema({
     default : getDate
   },
 });
-
-// Defining a pre hook to hash password before saving
-userSchema.pre("save", async function (next) {
-  if (!this.isModified("password")) next();
-
-  this.salt = await genSalt(rounds);
-  this.password = await hash(this.password, this.salt) + process.env.pepper;
-  next();
-});
-
-// Defining a static function to validate Login credentials
-userSchema.statics.isValidCredentials = async function({email, password}) {
-  const user = await this.findOne({email});
-  if(!user)
-    throw new Error('No User Found');
-
-  return (await compare(password, user.password.split(process.env.pepper)[0])) ? user : null;
-}
 
 // Model for Users
 const userModel = mongoose.model("users", userSchema);

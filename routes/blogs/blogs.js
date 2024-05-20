@@ -7,11 +7,10 @@ const {
   handleLikeBlog,
   handleLikeComment
 } = require("../../controller/blog");
-const { validateUser } = require("../../middleware/user");
+const passport = require("passport");
+const { isAuthenticated } = require("../../middleware/isAuthenticated");
 
 const router = require("express").Router();
-/* router.use('/user', validateUser, handleUserSpecific) */
-
 
 const commentValidation = checkSchema({
   data: {
@@ -33,7 +32,7 @@ const deleteCommentValidation = checkSchema({
 
 router.get("/", handleGetAllBlogs);
 
-router.use("/:id", validateUser);
+router.use("/:id",isAuthenticated);
 router.get("/:id", handleGetSpecificBlog);
 router.put("/:id/like", handleLikeBlog);
 

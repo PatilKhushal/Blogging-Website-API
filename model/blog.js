@@ -31,10 +31,10 @@ const blogSchema = mongoose.Schema({
         default : false
     },
 
-    /* thumbnail : {
+    thumbnail : {
         type : String,
         required : true
-    }, */
+    },
 
     comments : [
         {

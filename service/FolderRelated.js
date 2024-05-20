@@ -11,7 +11,11 @@ async function createFolder(id)
     try
     { 
         if(!(await existFolder(`public/${id.toString()}`)))
-          await fsPromise.mkdir(`public/${id}`);
+        {
+          console.log('creating folder');
+          await fsPromise.mkdir(`public/${id.toString()}`);
+        }
+
         return `public/${id.toString()}`;
     }
     catch(error)

@@ -6,16 +6,16 @@ const { commentModel } = require("../model/comment");
 const { userModel } = require("../model/user");
 
 async function handleGetAllBlogs(request, response) {
-  const token = request.cookies?.token;
   let blogs = await blogModel
     .find({isPublic : true})
     .populate({ path: "author", select: "_id name email" })
     .populate({ path: "comments" });
-  if (!token)
+  if(!request.user)
     blogs = blogs.map((data) => {
       return { ...data._doc, content: null };
     });
-
+  
+  console.log(blogs)
   return response
     .status(200)
     .json({ statusCode: 200, blogs: blogs, totalBlogs: blogs.length });
@@ -24,7 +24,7 @@ async function handleGetAllBlogs(request, response) {
 async function handleGetSpecificBlog(request, response) {
   try {
     const blogs = await blogModel
-      .findOne({ _id: request.params.id })
+      .findOne({ _id: request.params.id, isPublic : true }).select('-__v -isPublic')
       .populate({ path: "author", select: "_id name email" })
       .populate({ path: "comments" });
     if (!blogs)
@@ -109,8 +109,8 @@ const handleDeleteComment = async (request, response) => {
 
 const handleLikeBlog = async (request, response) => {
   try {
-    const blogs = await blogModel.findById({ _id: request.params.id });
-    if (!blogs)
+    const blog = await blogModel.findById({ _id: request.params.id });
+    if (!blog)
       return response
         .status(400)
         .json({ statusCode: 400, error: "No such blog present" });
@@ -122,23 +122,27 @@ const handleLikeBlog = async (request, response) => {
         .json({ statusCode: 400, error: "User Error" });
 
     let increment = 1;
-    if (user.likedBlogs.includes(request.params.id))
+    const indexOfBlog = user.likedBlogs.indexOf(request.params.id)
+    if (indexOfBlog > -1)
     {
-      user.likedBlogs = user.likedBlogs.filter((data) => data != request.params.id);
-      blogs.likes = blogs.likes.filter((data) => data != request.id);
+      user.likedBlogs.splice(indexOfBlog,1);
+      blog.likes.splice(blog.likes.indexOf(request.id), 1);
       increment = -1;
     }
     else
     {
       user.likedBlogs.push(request.params.id);
-      blogs.likes.push(request.id);
+      blog.likes.push(request.id);
     }
     await user.save();
 
-    blogs.totalLikes += increment;
-    await blogs.save();
+    blog.totalLikes += increment;
+    await blog.save();
 
-    return response.status(200).json({ statusCode: 200, blog: blogs });
+    return response
+    .status(200)
+    .json({ statusCode: 200, blogs: blog});
+
   } catch (error) {
     console.log(error);
     return response

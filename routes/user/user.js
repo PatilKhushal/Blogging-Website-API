@@ -4,14 +4,15 @@ const router = require("express").Router();
 const express = require("express");
 const { upload } = require("../../service/uploadFile");
 const { blogModel } = require("../../model/blog");
+const fsPromise = require("fs/promises");
+
 
 router.get("/profile", async (request, response) => {
   const user = await userModel
     .findById(request.id)
-    .select("-password -salt")
-    .populate("blogs")
+    .populate({path : "blogs", select : '-__v -author'})
     .populate("likedBlogs")
-    .populate("comments")
+    .populate({path : "comments", select : '-__v'})
     .populate("likedComments");
   if (!user)
     return response.status(400).json({ statusCode: 400, error: "No User" });
@@ -91,7 +92,7 @@ router.post(
   async (request, response) => {
     let validation = validationResult(request);
     if (!validation.isEmpty()) {
-      await fs.unlink(`public/${request.id}/${request.file.filename}`);
+      await fsPromise.unlink(`public/${request.id.substring(request.user.id.indexOf('|') + 1).trim()}/${request.file.filename}`);
       return response
         .status(400)
         .json({ statusCode: 400, error: validation.array() });
@@ -107,7 +108,7 @@ router.post(
       const blog = await blogModel.create({
         ...request.body,
         author: request.id,
-         /* , thumbnail : `http://localhost:3000/${request.id}/${request.file.filename}` */
+        thumbnail : `http://localhost:3000/${request.id}/${request.file.filename}`
       });
       
       await blog.save();
@@ -133,7 +134,7 @@ router.get(
       if(!user)
         return response.status(400).json({statusCode : 400, error : "No User"});
         
-        const blogs = await blogModel.find({author : request.id})
+        const blogs = await blogModel.find({author : request.id}).sort({date : -1}).select('-author -comments -likes -__v')
 
       return response.status(200).json({ statusCode: 200, blogs : blogs, totalBlogs : blogs.length});
     } catch (error) {
@@ -152,13 +153,35 @@ router.get('/blogs/:id', async (request, response) => {
             return response.status(400).json({statusCode : 400, error : "No User"})
         
         const blogs = await blogModel
-          .findOne({ _id: request.params.id, author : request.id }).select('-author')
-          .populate({ path: "comments" });
+          .findOne({ _id: request.params.id, author : request.id }).select('-author -isPublic -__v')
+          .populate({ path: "comments", select : '-__v' });
         if (!blogs)
           return response
             .status(400)
             .json({ statusCode: 400, error: "No such blog present" });
         return response.status(200).json({ statusCode: 200, blog: blogs });
+      } catch (error) {
+        console.log(error);
+        return response
+          .status(500)
+          .json({ statusCode: 500, error: "Internal Server Error" });
+      }
+})
+
+router.delete('/blogs/:id', async (request, response) => {
+    try {
+        const user = await userModel.findById(request.id);
+        if(!user)
+            return response.status(400).json({statusCode : 400, error : "No User"})
+        
+        const blogs = await blogModel
+          .findOneAndDelete({ _id: request.params.id, author : request.id })
+        if (!blogs)
+          return response
+            .status(400)
+            .json({ statusCode: 400, error: "No such blog present" });
+
+        return response.status(200).json({ statusCode: 200});
       } catch (error) {
         console.log(error);
         return response
